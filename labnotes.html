@@ -1,0 +1,87 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>Lab Notes</title>
+</head>
+      
+<body>
+<table><tr>
+
+<td>
+<div>
+R1
+
+interface g1.12
+ encapsulation dot1Q 12
+ ip address 172.16.12.1 255.255.255.252
+ no ip redirects
+ no ip proxy-arp
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:0:12::1/64
+ ospfv3 1 ipv6 area 1
+ ospfv3 1 ipv4 area 1
+!
+interface Loopback0
+ ip address 192.168.1.1 255.255.255.0
+ ipv6 address FE80::1 link-local
+ ipv6 address 2001:DB8:0:11::1/64
+ ospfv3 1 ipv4 area 0
+ ospfv3 1 ipv6 area 0
+!
+!
+router ospfv3 1
+ router-id 0.0.0.1
+ !
+ address-family ipv4 unicast
+  passive-interface Loopback0
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  passive-interface Loopback0
+ exit-address-family
+
+
+</div>
+</td>
+
+<td>
+</td>
+
+<td>
+R2#
+
+interface g1.12
+ encapsulation dot1Q 12
+ ip address 172.16.12.2 255.255.255.252
+ no ip redirects
+ no ip proxy-arp
+ ipv6 address FE80::2 link-local
+ ipv6 address 2001:DB8:0:12::2/64
+ ospfv3 1 ipv6 area 1
+ ospfv3 1 ipv4 area 1
+!
+interface Loopback0
+ ip address 192.168.2.1 255.255.255.0
+ ipv6 address FE80::2 link-local
+ ipv6 address 2001:DB8:0:22::1/64
+ ospfv3 1 ipv6 area 1
+ ospfv3 1 ipv4 area 1
+!
+!
+router ospfv3 1
+ router-id 0.0.0.2
+ !
+ address-family ipv4 unicast
+  passive-interface Loopback0
+ exit-address-family
+ !
+ address-family ipv6 unicast
+  passive-interface Loopback0
+ exit-address-family
+
+
+</div>
+</td>
+
+</tr></table>
+
+</body></html>
