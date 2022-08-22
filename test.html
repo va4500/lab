@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en">
+
+<head>
+  <title>Test D3JS Page</title>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="funcs.js"></script>
+</head>
+
+
+<body><script>
+
+
+async function myFunc(){
+    const response = await d3.json("https://raw.githubusercontent.com/va4500/lab/main/list.json");
+    d3.select("body").selectAll("div").data(response.regions).enter()
+      .append("div").text(function(d,i)
+        { return i + 1 + " " + d.region + " has " + d.cidrs.length + " cidr(s)";});
+}
+
+async function myFuncOracle(){
+    const response = await d3.json("https://docs.oracle.com/en-us/iaas/tools/public_ip_ranges.json");
+    d3.select("body").selectAll("div").data(response.regions).enter()
+      .append("div").text(function(d,i){ return i + 1 + " " + d.region;});
+}
+
+myFunc();
+d3.select("body").append("span").text(myFunc1());
+
+</script></body></html>
