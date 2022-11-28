@@ -1,0 +1,50 @@
+alias configure srin do show run | include
+alias configure sr do show run
+alias configure srs do show run | section
+alias configure sn do sh cdp n
+alias configure sri do show run int
+alias configure si do show int
+alias configure srbe do show run | begin 
+alias configure s6 do show ipv6 int br
+alias configure s do show ip int br
+alias configure uname do sh ver | include ^Cisco IOS\ 
+alias configure srsi do show run | section ^interface 
+alias configure sra do show run | include ^alias 
+alias configure srr do show run | section ^router
+alias configure srsr do show run | section ^router
+alias configure a do show aliases 
+alias configure wr do wr
+alias configure s4r do show ip route
+alias configure s6r do show ipv6 route
+alias configure srrb do show run | section ^router b
+alias configure srro do show run | section ^router o
+alias configure srre do show run | section ^router e
+alias configure srb do show run | section ^router b
+alias configure sro do show run | section ^router o
+alias configure sre do show run | section ^router e
+alias exec ct conf t
+alias exec srin show run | include
+alias exec sr show run
+alias exec srs show run | section
+alias exec sn sh cdp n
+alias exec sri show run int
+alias exec si show int
+alias exec srbe show run | begin 
+alias exec s6 show ipv6 int br
+alias exec s show ip int br
+alias exec uname sh ver | include ^Cisco IOS\ 
+alias exec c conf t
+alias exec srsi show run | section ^interface 
+alias exec sra show run | include ^alias 
+alias exec srr show run | section ^router
+alias exec srsr show run | section ^router
+alias exec a show aliases 
+alias exec s4r show ip route
+alias exec s6r show ipv6 route
+alias exec srrb show run | section ^router b
+alias exec srro show run | section ^router o
+alias exec srre show run | section ^router e
+alias exec srb show run | section ^router b
+alias exec sro show run | section ^router o
+alias exec sre show run | section ^router e
+alias exec sd show int description
