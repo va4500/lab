@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" xml:lang="en">
+
+
+<head>
+ <title>Config Generator</title>
+
+ <script src="https://d3js.org/d3.v7.min.js"></script>
+ <meta charset="utf-8">
+ 
+ <style>
+ table, th, td {
+   border: 3px solid black;
+   border-collapse: collapse;
+ }
+ </style>
+</head>
+
+
+
+<body>
+
+<h3>Config Generator for Labs</h3>
+
+<TABLE><TR>
+<TD>
+<div><strong>Stub Links</strong></div>  <table id="tbl_stub_links"></table>
+</TD>
+
+<TD>
+<div><strong>Transit Links</strong></div> <table id="tbl_transit_links"></table>
+</TD>
+</TR></TABLE>
+
+
+<p>cd /media/Data/Prj/arsi/Sim/</p>
+<TABLE border="0"><TR border="0">
+<TD valign="top">
+<div><strong>Create Libvirt VMs</strong></div><table id="tbl_create_vms"></table><p>virsh list</p>
+</TD>
+
+<TD valign="top">
+<div><strong>Create Libvirt Networks</strong></div><table id="tbl_create_nets"></table><p>brctl show</p>
+</TD>
+
+<TD valign="top">
+<div><strong>Serial Consoles</strong></div><table id="tbl_consoles"></table>
+</TD>
+</TR></TABLE>
+
+<p><strong>Basic Interface Configs</strong></p><pre><div id="router_config"></div></pre>
+<p><strong>Bridge Interface Configs</strong></p><pre><div id="bridge_config"></div></pre>
+
+
+<script>
+
+const BaseIP_First_Two_Octets = "10.1."
+
+function interface_config(segmid, nodeid) {
+   return "interface gi1." + segmid + `
+` + 
+" encapsulation dot1Q " + segmid + `
+` + 
+" ip address " + BaseIP_First_Two_Octets + segmid + "." + nodeid + " 255.255.255.0" + `
+ no ip redirects
+ no ip proxy-arp
+ cdp enable`;
+}
+
+function br_addvlan_config(segmid, nodeid) {
+   return "bridge vlan add vid " + segmid + " dev rtr" + nodeid + "nic1 master";
+}
+
+function br_delvlan_config(segmid, nodeid) {
+   return "bridge vlan del vid " + segmid + " dev rtr" + nodeid + "nic1 pvid untagged master";
+}
+
+
+var nodes_config = [];
+var bridge_config = [];
+
+var tbl = d3.select("body").select("#tbl_stub_links");
+    let tblrow = tbl.append("tr");
+    tblrow.append("td").text(`#`);
+    tblrow.append("td").text(`router-id`);
+    tblrow.append("td").text(`Name`);
+    tblrow.append("td").text(`LAN`);
+    
+for (let i = 1; i <= 6; i++) {
+    nodes_config.push(["hostname R" + i, interface_config(i,i)]);
+    bridge_config.push([]);
+
+    
+    let tblrow = tbl.append("tr");
+    tblrow.append("td").text(`${i}`);
+    tblrow.append("td").text(`0.0.0.${i}`);
+    tblrow.append("td").text(`R${i}`);
+    tblrow.append("td").text(`${BaseIP_First_Two_Octets}${i}.0/24`);
+};
+
+
+tbl = d3.select("body").select("#tbl_transit_links");
+
+var transit_links = [ [1,2], [2,3], [2,4], [3,5], [4,5], [5,6] ];
+
+for (let i = 0; i < transit_links.length; i++) {
+    let a = transit_links[i][0];
+    let b = transit_links[i][1];
+    let segmid = a*10 + b;
+    nodes_config[a-1].push(interface_config(segmid, a));
+    nodes_config[b-1].push(interface_config(segmid, b));
+
+    bridge_config[a-1].push(br_addvlan_config(segmid, a));
+    bridge_config[b-1].push(br_addvlan_config(segmid, b));
+
+    let tblrow = tbl.append("tr");
+    tblrow.append("td").text(i+1);
+    tblrow.append("td").text("R" + a + "-R" + b);
+    tblrow.append("td").text(BaseIP_First_Two_Octets+segmid+".0/24");
+};
+
+for (let i = 0; i < bridge_config.length; i++) {
+    bridge_config[i].push(br_delvlan_config(1, i + 1));
+};
+
+const exclamation_sep = `
+!
+`;
+
+const newline_sep = `
+`;
+
+
+const horiz_line_sep = `
+----------------------------------------
+
+`;
+
+function concatconf(arr_cfg, sep1, sep2) {
+  var s = "";
+
+  for (let i = 0; i < arr_cfg.length; i++) {
+      for (let j=0; j < arr_cfg[i].length; j++) {
+        s = s + arr_cfg[i][j] + sep1;
+      };
+      s = s + sep2;
+  };
+  
+  return s;
+};
+
+
+d3.select("#router_config").text(concatconf(nodes_config, exclamation_sep, horiz_line_sep));
+
+const br_name = "br0001";
+
+var bridge_config_str = newline_sep + "ip link set " + 
+                        br_name + " type bridge vlan_filtering 1" +
+                        newline_sep + newline_sep + 
+                        newline_sep + concatconf(bridge_config, newline_sep, newline_sep) +
+                        "tcpdump -i " + br_name + " -nnne" + newline_sep;
+
+d3.select("#bridge_config").text(bridge_config_str);
+
+function virsh_vm_create_cmd(x)  {return `virsh create rtr${x}.xml`};
+function virsh_net_create_cmd(x) {return `virsh net-create net${x}.xml`};
+function virsh_vm_console_cmd(x) {
+return `export PS1=" R${x} "; PROMPT_COMMAND='echo -en "\\033]0; R${x} \\a"'; virsh console rtr${x}`};
+
+
+
+
+//var vms = [1,2,3,4,5,6];
+var vm_list = [1,2,3,4,5,6];
+
+d3.select("#tbl_create_vms").append("tr").append("td").style("vertical-align","top").selectAll("div")
+  .data(vm_list).enter().append("div").text(virsh_vm_create_cmd);
+
+d3.select("#tbl_create_nets").append("tr").append("td").style("vertical-align","top").selectAll("div")
+  .data(vm_list).enter().append("div").text(virsh_net_create_cmd);
+  
+d3.select("#tbl_consoles").append("tr").append("td").attr("valign","top").selectAll("div")
+  .data(vm_list).enter().append("div").text(virsh_vm_console_cmd);
+
+</script>
+
+
+
+
+<pre>
+----------------------------------------
+
+virsh destroy rtr1 &
+
+virsh destroy rtr2 &
+
+virsh destroy rtr3 &
+
+virsh destroy rtr4 &
+
+virsh destroy rtr5 &
+
+virsh destroy rtr6 &
+
+
+<style>
+table, tr, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+</style>
+
+  var tbl = d3.select("body").select("#tbl_create_vms");
+
+  for (let i = 1; i <= 6; i++) {
+      tbl.append("tr").append("td").text(`virsh create rtr${i}.xml`);
+  };
+
+
+    d3.select("#tbl_stub_links").append("tr").
+      selectAll("td").data([ `${i}` , `R${i}` , `${BaseIP_First_Two_Octets}${i}.0/24` ]).
+      enter().append("td").text(fuction(d){return d});
+
+</pre>
+
+</body>
